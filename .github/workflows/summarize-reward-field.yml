@@ -1,0 +1,102 @@
+name: Summarize Reward Field
+on:
+  schedule:
+    - cron: "0 0 1 * *" # Run at 00:00 on the first day of every month
+
+jobs:
+  summarize-reward-field:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for new commits since last summary
+        run: |
+          last_tag=$(git describe --tags --abbrev=0 --match "summary-*")
+
+          if [ -z "$last_tag" ]; then
+            echo "No previous summary tags found."
+            echo "NEW_COMMITS=true" >> $GITHUB_ENV
+          else
+            new_commits=$(git log $last_tag..HEAD --oneline)
+            if [ -z "$new_commits" ]; then
+              echo "No new commits since last summary tag."
+              echo "NEW_COMMITS=false" >> $GITHUB_ENV
+            else
+              echo "New commits found."
+              echo "NEW_COMMITS=true" >> $GITHUB_ENV
+            fi
+          fi
+      - name: Install JQ & YQ
+        if: env.NEW_COMMITS == 'true'
+        run: |
+          sudo apt-get install -y jq
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          chmod +x /usr/bin/yq
+
+      - name: Get all issues from last month
+        if: env.NEW_COMMITS == 'true'
+        run: |
+          last_month=$(date -d "$(date +%Y-%m-01) -1 month" +%Y-%m)
+          gh api graphql -f query='
+          query($last_month: String!) {
+            repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
+              issues(first: 100, states: OPEN, filterBy: {since: $last_month}) {
+                nodes {
+                  number
+                  author { login }
+                  projectItems(first: 10) {
+                    nodes {
+                      fieldValues(first: 10) {
+                        nodes {
+                          field { ... on ProjectV2FieldCommon { name } }
+                          ... on ProjectV2ItemFieldTextValue { text }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f last_month="$last_month-01T00:00:00Z" > issues.json
+
+          jq -r '
+          .data.repository.issues.nodes[] |
+          .author.login as $login |
+          .projectItems.nodes[].fieldValues.nodes[] |
+          select(.field.name == "Reward") |
+          {login: $login, reward: .text}
+          ' issues.json > rewards.json
+
+      - name: Summarize rewards
+        if: env.NEW_COMMITS == 'true'
+        run: |
+          cat rewards.json | jq -s '
+          group_by(.login) | 
+          map({
+            login: .[0].login,
+            rewards: group_by(.reward[0:1]) | 
+            map({
+              currency: .[0].reward[0:1],
+              total: map(.reward[1:] | tonumber) | add
+            })
+          })
+          ' | yq e -P > summary.yml
+
+      - run: cat summary.yml
+        if: env.NEW_COMMITS == 'true'
+
+      - name: Create tag with summary
+        if: env.NEW_COMMITS == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          tag_name="summary-$(date +%Y-%m)"
+
+          git tag -a $tag_name $(git rev-parse HEAD) -m "$(cat summary.yml)"
+          git push origin $tag_name
+
+      - name: Create GitHub release
+        if: env.NEW_COMMITS == 'true'
+        run: |
+          gh release create $tag_name --notes "$(cat summary.yml)"

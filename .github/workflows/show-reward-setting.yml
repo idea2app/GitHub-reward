@@ -1,0 +1,39 @@
+name: Show Reward setting
+on:
+  issues:
+    types:
+      - edited
+
+jobs:
+  show-reward-setting:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get install -y jq
+
+      - name: Get Issue details
+        run: |
+          gh api graphql -f query='
+          query($issue_number: Int!) {
+            repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
+              issue(number: $issue_number) {
+                projectItems(first: 10) {
+                  nodes {
+                    fieldValues(first: 10) {
+                      nodes {
+                        field { ... on ProjectV2FieldCommon { name } }
+                        ... on ProjectV2ItemFieldTextValue { text }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f issue_number=${{ github.event.issue.number }} > issue.json
+
+          reward=$(jq -r '.data.repository.issue.projectItems.nodes[].fieldValues.nodes[] | select(.field.name == "Reward") | .text' issue.json)
+
+          echo "REWARD=$reward" >> $GITHUB_ENV
+
+      # You may replace this step with your ChatOps hooks
+      - run: |
+          echo "Reward: ${{ env.REWARD }}"

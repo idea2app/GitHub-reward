@@ -1,0 +1,50 @@
+name: Claim Issue Reward
+on:
+  issues:
+    types:
+      - closed
+
+jobs:
+  claim-issue-reward:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get install -y jq
+
+      - name: Get Issue details
+        run: gh issue view ${{ github.event.issue.number }} --json projectCards > issue.json
+
+      # https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects#finding-information-about-projects
+      # https://some-natalie.dev/blog/graphql-intro/
+      - name: Query Reward field
+        run: |
+          project_id=$(jq -r '.projectCards[0].project.id' issue.json)
+          card_id=$(jq -r '.projectCards[0].id' issue.json)
+
+          gh api graphql -f query='
+          query($project_id: ID!, $card_id: ID!) {
+            node(id: $project_id) {
+              ... on Project {
+                columns(first: 10) {
+                  nodes {
+                    cards(first: 100) {
+                      nodes {
+                        id
+                        fields {
+                          name
+                          value
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f project_id=$project_id -f card_id=$card_id > project.json
+
+          reward=$(jq -r '.data.node.columns.nodes[].cards.nodes[] | select(.id == "'$card_id'") | .fields[] | select(.name == "Reward") | .value' project.json)
+
+          echo "REWARD=$reward" >> $GITHUB_ENV
+
+      # You may replace this step with your ChatOps hooks
+      - run: |
+          echo "Reward: ${{ env.REWARD }}"

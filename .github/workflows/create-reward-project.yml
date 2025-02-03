@@ -1,0 +1,38 @@
+name: Create Project & Reward Field
+on:
+  create:
+
+jobs:
+  create-reward-field:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get install -y jq
+
+      - name: Create a new project using KanBan template
+        run: |
+          gh api graphql -f query='
+          mutation {
+            createProjectV2(input: {ownerId: "${{ github.repository_owner }}", title: "KanBan", template: KANBAN}) {
+              projectV2 { id }
+            }
+          }' > project.json
+
+          project_id=$(jq -r '.data.createProjectV2.projectV2.id' project.json)
+
+          echo "PROJECT_ID=$project_id" >> $GITHUB_ENV
+
+      - name: Create Reward field
+        run: |
+          gh api graphql -f query='
+          mutation($project_id: ID!) {
+            addProjectV2Field(input: {projectId: $project_id, name: "Reward", dataType: TEXT}) {
+              projectV2Field { id }
+            }
+          }' -f project_id=${{ env.PROJECT_ID }}
+
+      - name: Display Project URL
+        run: |
+          owner="${{ github.repository_owner }}"
+          owner_path=$([[ $owner == *"/"* ]] && echo $owner || echo "users/$owner")
+
+          echo "Project URL: https://github.com/$owner_path/projects/$PROJECT_ID"
