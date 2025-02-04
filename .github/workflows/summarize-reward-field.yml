@@ -26,66 +26,22 @@ jobs:
               echo "NEW_COMMITS=true" >> $GITHUB_ENV
             fi
           fi
-      - name: Install JQ & YQ
-        if: env.NEW_COMMITS == 'true'
-        run: |
-          sudo apt-get install -y jq
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-          chmod +x /usr/bin/yq
-
-      - name: Get all issues from last month
+      - name: Get reward data of last month from tags
         if: env.NEW_COMMITS == 'true'
         run: |
           last_month=$(date -d "$(date +%Y-%m-01) -1 month" +%Y-%m)
-          gh api graphql -f query='
-          query($last_month: String!) {
-            repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
-              issues(first: 100, states: OPEN, filterBy: {since: $last_month}) {
-                nodes {
-                  number
-                  author { login }
-                  projectItems(first: 10) {
-                    nodes {
-                      fieldValues(first: 10) {
-                        nodes {
-                          field { ... on ProjectV2FieldCommon { name } }
-                          ... on ProjectV2ItemFieldTextValue { text }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }' -f last_month="$last_month-01T00:00:00Z" > issues.json
+          git tag --list "reward-*" --format="%(refname:short) %(creatordate:short)" | \
+          awk -v last_month="$last_month" '$2 >= last_month {print $1}' > reward_tags.txt
 
-          jq -r '
-          .data.repository.issues.nodes[] |
-          .author.login as $login |
-          .projectItems.nodes[].fieldValues.nodes[] |
-          select(.field.name == "Reward") |
-          {login: $login, reward: .text}
-          ' issues.json > rewards.json
+          while IFS= read -r tag; do
+            git show $tag:reward_output.yml >> all_rewards.yml
+          done < reward_tags.txt
 
       - name: Summarize rewards
         if: env.NEW_COMMITS == 'true'
-        run: |
-          cat rewards.json | jq -s '
-          group_by(.login) | 
-          map({
-            login: .[0].login,
-            rewards: group_by(.reward[0:1]) | 
-            map({
-              currency: .[0].reward[0:1],
-              total: map(.reward[1:] | tonumber) | add
-            })
-          })
-          ' | yq e -P > summary.yml
+        run: cat all_rewards.yml | deno run --allow-read ./scripts/count-reward.ts > summary.yml
 
-      - run: cat summary.yml
-        if: env.NEW_COMMITS == 'true'
-
-      - name: Create tag with summary
+      - name: Save Summary in Git tag
         if: env.NEW_COMMITS == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
@@ -94,9 +50,9 @@ jobs:
           tag_name="summary-$(date +%Y-%m)"
 
           git tag -a $tag_name $(git rev-parse HEAD) -m "$(cat summary.yml)"
-          git push origin $tag_name
+          git push origin --tags
 
-      - name: Create GitHub release
+      - name: Save Summary in GitHub release
         if: env.NEW_COMMITS == 'true'
         run: |
           gh release create $tag_name --notes "$(cat summary.yml)"

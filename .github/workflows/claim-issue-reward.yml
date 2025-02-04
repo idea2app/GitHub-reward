@@ -8,43 +8,44 @@ jobs:
   claim-issue-reward:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - run: sudo apt-get install -y jq
 
       - name: Get Issue details
-        run: gh issue view ${{ github.event.issue.number }} --json projectCards > issue.json
+        id: parse_issue
+        uses: stefanbuck/github-issue-parser@v3
+        with:
+          template-path: ".github/ISSUE_TEMPLATE/reward-task.yml"
 
-      # https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects#finding-information-about-projects
-      # https://some-natalie.dev/blog/graphql-intro/
-      - name: Query Reward field
+      - name: Get PR details
+        if: ${{ github.event.issue.pull_request }}
+        run: gh pr view ${{ github.event.issue.pull_request.url }} --json author,assignees > pr.json
+
+      - name: Calculate Reward
         run: |
-          project_id=$(jq -r '.projectCards[0].project.id' issue.json)
-          card_id=$(jq -r '.projectCards[0].id' issue.json)
+          currency=${{ steps.parse_issue.outputs.issueparser_currency }}
+          reward=${{ steps.parse_issue.outputs.issueparser_amount }}
 
-          gh api graphql -f query='
-          query($project_id: ID!, $card_id: ID!) {
-            node(id: $project_id) {
-              ... on Project {
-                columns(first: 10) {
-                  nodes {
-                    cards(first: 100) {
-                      nodes {
-                        id
-                        fields {
-                          name
-                          value
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }' -f project_id=$project_id -f card_id=$card_id > project.json
+          pr_author=$(jq -r '.author.login' pr.json)
+          pr_assignees=$(jq -r '.assignees[].login' pr.json | paste -sd "," -)
 
-          reward=$(jq -r '.data.node.columns.nodes[].cards.nodes[] | select(.id == "'$card_id'") | .fields[] | select(.name == "Reward") | .value' project.json)
+          deno run ./scripts/share-reward.ts "$currency" $reward $pr_author $pr_assignees > reward.yml
 
-          echo "REWARD=$reward" >> $GITHUB_ENV
+      - name: Save Reward in Git tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "reward-${{ github.event.issue.number }}" -m "$(cat reward.yml)"
+          git push origin --tags
 
-      # You may replace this step with your ChatOps hooks
-      - run: |
-          echo "Reward: ${{ env.REWARD }}"
+      - name: Save Reward in GitHub issue comment
+        run: |
+          cat <<EOF > reward_comment.md
+          ## Reward data
+
+          ```yml
+          $(cat reward.yml)
+          ```
+          EOF
+          gh issue comment ${{ github.event.issue.number }} --body-file reward_comment.md
