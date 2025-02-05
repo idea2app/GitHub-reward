@@ -1,12 +1,26 @@
-import { stringify } from "https://deno.land/std/encoding/yaml.ts";
+import { components } from "@octokit/openapi-types";
+import "zx/globals";
 
-const [currency, reward, ...users] = Deno.args;
+$.verbose = true;
+
+const [currency, reward, PR_URL] = argv._;
+
+interface PRMeta {
+  author: components["schemas"]["simple-user"];
+  assignees: components["schemas"]["simple-user"][];
+}
+
+const { author, assignees }: PRMeta = await (
+  await $`gh pr view ${PR_URL} --json author,assignees`
+).json();
+
+const users = [author.login, ...assignees.map(({ login }) => login)];
 
 const averageReward = (parseFloat(reward) / users.length).toFixed(2);
 
-const list = users.map((login) => ({
+const list: Reward[] = users.map(login => ({
   id: `@${login}`,
   currency,
-  reward: parseFloat(averageReward),
+  reward: parseFloat(averageReward)
 }));
-console.log(stringify(list));
+console.log(YAML.stringify(list));

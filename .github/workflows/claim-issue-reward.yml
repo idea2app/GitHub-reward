@@ -10,7 +10,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: sudo apt-get install -y jq
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
 
       - name: Get Issue details
         id: parse_issue
@@ -18,19 +25,13 @@ jobs:
         with:
           template-path: ".github/ISSUE_TEMPLATE/reward-task.yml"
 
-      - name: Get PR details
-        if: ${{ github.event.issue.pull_request }}
-        run: gh pr view ${{ github.event.issue.pull_request.url }} --json author,assignees > pr.json
-
       - name: Calculate Reward
         run: |
-          currency=${{ steps.parse_issue.outputs.issueparser_currency }}
-          reward=${{ steps.parse_issue.outputs.issueparser_amount }}
-
-          pr_author=$(jq -r '.author.login' pr.json)
-          pr_assignees=$(jq -r '.assignees[].login' pr.json | paste -sd "," -)
-
-          deno run ./scripts/share-reward.ts "$currency" $reward $pr_author $pr_assignees > reward.yml
+          pnpm i
+          pnpx tsx ./scripts/share-reward.ts \
+            "${{ steps.parse_issue.outputs.issueparser_currency }}" \
+            ${{ steps.parse_issue.outputs.issueparser_amount }} \
+            ${{ github.event.issue.pull_request.url }} > reward.yml
 
       - name: Save Reward in Git tag
         run: |

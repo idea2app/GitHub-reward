@@ -1,0 +1,20 @@
+{
+  "name": "github-reward",
+  "version": "0.2.0",
+  "license": "LGPL-2.1-or-later",
+  "author": "shiy2008@gmail.com",
+  "type": "module",
+  "dependencies": {
+    "zx": "^8.3.2"
+  },
+  "devDependencies": {
+    "@octokit/openapi-types": "^23.0.1",
+    "@tsconfig/node22": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.3"
+  },
+  "prettier": {
+    "trailingComma": "none",
+    "arrowParens": "avoid"
+  }
+}
