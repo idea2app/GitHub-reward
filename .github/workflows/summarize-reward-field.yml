@@ -6,6 +6,8 @@ on:
 jobs:
   summarize-reward-field:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -26,22 +28,15 @@ jobs:
               echo "NEW_COMMITS=true" >> $GITHUB_ENV
             fi
           fi
-      - uses: pnpm/action-setup@v4
+      - uses: denoland/setup-deno@v2
         if: env.NEW_COMMITS == 'true'
         with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        if: env.NEW_COMMITS == 'true'
-        with:
-          node-version: 22
-          cache: pnpm
+          deno-version: v2.x
 
       - name: Summarize rewards
         if: env.NEW_COMMITS == 'true'
         run: |
-          pnpm i
-          pnpx tsx ./scripts/count-reward.ts > summary.yml
+          deno --allow-all ./scripts/count-reward.ts summary.yml
 
       - name: Save Summary in Git tag
         if: env.NEW_COMMITS == 'true'

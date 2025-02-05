@@ -7,17 +7,14 @@ on:
 jobs:
   claim-issue-reward:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: denoland/setup-deno@v2
         with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+          deno-version: v2.x
 
       - name: Get Issue details
         id: parse_issue
@@ -27,11 +24,11 @@ jobs:
 
       - name: Calculate Reward
         run: |
-          pnpm i
-          pnpx tsx ./scripts/share-reward.ts \
+          deno --allow-all ./scripts/share-reward.ts \
             "${{ steps.parse_issue.outputs.issueparser_currency }}" \
             ${{ steps.parse_issue.outputs.issueparser_amount }} \
-            ${{ github.event.issue.pull_request.url }} > reward.yml
+            ${{ github.event.issue.pull_request.url }} \
+            reward.yml
 
       - name: Save Reward in Git tag
         run: |
