@@ -1,0 +1,49 @@
+name: Claim Issue Reward
+on:
+  issues:
+    types:
+      - closed
+
+jobs:
+  claim-issue-reward:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Get Issue details
+        id: parse_issue
+        uses: stefanbuck/github-issue-parser@v3
+        with:
+          template-path: ".github/ISSUE_TEMPLATE/reward-task.yml"
+
+      - name: Calculate Reward
+        run: |
+          deno --allow-all ./scripts/share-reward.ts \
+            "${{ steps.parse_issue.outputs.issueparser_currency }}" \
+            ${{ steps.parse_issue.outputs.issueparser_amount }} \
+            ${{ github.event.issue.pull_request.url }} \
+            reward.yml
+
+      - name: Save Reward in Git tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "reward-${{ github.event.issue.number }}" -m "$(cat reward.yml)"
+          git push origin --tags
+
+      - name: Save Reward in GitHub issue comment
+        run: |
+          cat <<EOF > reward_comment.md
+          ## Reward data
+
+          ```yml
+          $(cat reward.yml)
+          ```
+          EOF
+          gh issue comment ${{ github.event.issue.number }} --body-file reward_comment.md

@@ -1,0 +1,40 @@
+name: Reward Task
+description: Task issue with Reward
+title: "[Reward] "
+labels:
+  - reward
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+    validations:
+      required: true
+
+  - type: dropdown
+    id: currency
+    attributes:
+      label: Select currency symbol and abbreviation
+      options:
+        - "USD $"
+        - "CAD C$"
+        - "AUD A$"
+        - "GBP £"
+        - "EUR €"
+        - "CNY ¥"
+        - "HKD HK$"
+        - "TWD NT$"
+        - "SGD S$"
+        - "KRW ₩"
+        - "JPY ¥"
+        - "INR ₹"
+        - "UAH ₴"
+    validations:
+      required: true
+
+  - type: input
+    id: amount
+    attributes:
+      label: Currency amount
+    validations:
+      required: true

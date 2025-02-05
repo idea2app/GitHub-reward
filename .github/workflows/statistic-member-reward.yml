@@ -1,0 +1,51 @@
+name: Statistic Member Reward
+on:
+  schedule:
+    - cron: "0 0 1 * *" # Run at 00:00 on the first day of every month
+
+jobs:
+  statistic-member-reward:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for new commits since last statistic
+        run: |
+          last_tag=$(git describe --tags --abbrev=0 --match "statistic-*")
+
+          if [ -z "$last_tag" ]; then
+            echo "No previous statistic tags found."
+            echo "NEW_COMMITS=true" >> $GITHUB_ENV
+          else
+            new_commits=$(git log $last_tag..HEAD --oneline)
+            if [ -z "$new_commits" ]; then
+              echo "No new commits since last statistic tag."
+              echo "NEW_COMMITS=false" >> $GITHUB_ENV
+            else
+              echo "New commits found."
+              echo "NEW_COMMITS=true" >> $GITHUB_ENV
+            fi
+          fi
+      - uses: denoland/setup-deno@v2
+        if: env.NEW_COMMITS == 'true'
+        with:
+          deno-version: v2.x
+
+      - name: Statistic rewards
+        if: env.NEW_COMMITS == 'true'
+        run: deno --allow-all ./scripts/count-reward.ts statistic.yml
+
+      - name: Save Statistic in Git tag & GitHub release
+        if: env.NEW_COMMITS == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          tag_name="statistic-$(date +%Y-%m)"
+
+          git tag -a $tag_name $(git rev-parse HEAD) -m "$(cat statistic.yml)"
+          git push origin --tags
+
+          gh release create $tag_name --notes "$(cat statistic.yml)"
