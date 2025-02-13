@@ -1,20 +1,18 @@
-import { $, YAML, argv, fs } from "npm:zx";
+import { $, YAML } from "npm:zx";
 
 $.verbose = true;
-
-const [targetFile] = argv._;
 
 const rawTags =
   await $`git tag --list "reward-*" --format="%(refname:short) %(creatordate:short)"`;
 
 const lastMonth = new Date();
 lastMonth.setMonth(lastMonth.getMonth() - 1);
-const lastMonthStr = lastMonth.toISOString().slice(0, 7);
+const lastMonthStr = lastMonth.toJSON().slice(0, 7);
 
 const rewardTags = rawTags.stdout
   .split("\n")
-  .filter((line) => line.split(" ")[1] >= lastMonthStr)
-  .map((line) => line.split(" ")[0]);
+  .filter((line) => line.split(/\s+/)[1] >= lastMonthStr)
+  .map((line) => line.split(/\s+/)[0]);
 
 let rawYAML = "";
 
@@ -37,5 +35,14 @@ const summaryList = Object.entries(groupedRewards).map(([id, rewards]) => {
 
 const summaryText = YAML.stringify(summaryList);
 
-if (targetFile) await fs.outputFile(targetFile, summaryText);
-else console.log(summaryText);
+console.log(summaryText);
+
+const tagName = `statistic-${new Date().toJSON().slice(0, 7)}`;
+
+await $`git config --global user.name "github-actions[bot]"`;
+await $`git config --global user.email "github-actions[bot]@users.noreply.github.com"`;
+
+await $`git tag -a ${tagName} $(git rev-parse HEAD) -m ${summaryText}`;
+await $`git push origin --tags`;
+
+await $`gh release create ${tagName} --notes ${summaryText}`;
