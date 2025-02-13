@@ -1,4 +1,4 @@
-interface Reward {
+export interface Reward {
   id: string;
   currency: string;
   reward: number;

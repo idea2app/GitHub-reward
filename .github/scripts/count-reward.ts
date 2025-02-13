@@ -1,5 +1,7 @@
 import { $, YAML } from "npm:zx";
 
+import { Reward } from "./type.ts";
+
 $.verbose = true;
 
 const rawTags =

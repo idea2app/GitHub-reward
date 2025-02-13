@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           fetch-tags: true
 
       - name: Check for new commits since last statistic
@@ -39,4 +40,4 @@ jobs:
 
       - name: Statistic rewards
         if: env.NEW_COMMITS == 'true'
-        run: deno --allow-all ./scripts/count-reward.ts
+        run: deno --allow-all .github/scripts/count-reward.ts

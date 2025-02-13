@@ -1,6 +1,8 @@
 import { components } from "npm:@octokit/openapi-types";
 import { $, argv, YAML } from "npm:zx";
 
+import { Reward } from "./type.ts";
+
 $.verbose = true;
 
 const [repositoryOwner, repositoryName, issueNumber, currency, reward] = argv._;

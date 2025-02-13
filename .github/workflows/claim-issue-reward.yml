@@ -12,9 +12,11 @@ jobs:
     permissions:
       contents: write
       issues: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           fetch-tags: true
 
       - uses: denoland/setup-deno@v2
@@ -29,7 +31,7 @@ jobs:
 
       - name: Calculate & Save Reward
         run: |
-          deno --allow-all ./scripts/share-reward.ts \
+          deno --allow-all .github/scripts/share-reward.ts \
             ${{ github.repository_owner }} \
             ${{ github.event.repository.name }} \
             ${{ github.event.issue.number }} \

@@ -19,7 +19,7 @@ NPM compatible environment for example:
 npm i pnpm -g
 cd /path/to/your/git/repository/root
 
-folders=".github/ISSUE_TEMPLATE .github/workflows scripts"
+folders=".github/ISSUE_TEMPLATE .github/workflows .github/scripts"
 
 for folder in $folders; do
     mkdir -p $folder
