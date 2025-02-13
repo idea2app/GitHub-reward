@@ -2,6 +2,8 @@ name: Statistic Member Reward
 on:
   schedule:
     - cron: "0 0 1 * *" # Run at 00:00 on the first day of every month
+env:
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
   statistic-member-reward:
@@ -10,10 +12,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
 
       - name: Check for new commits since last statistic
         run: |
-          last_tag=$(git describe --tags --abbrev=0 --match "statistic-*")
+          last_tag=$(git describe --tags --abbrev=0 --match "statistic-*" || echo "")
 
           if [ -z "$last_tag" ]; then
             echo "No previous statistic tags found."
@@ -35,17 +39,4 @@ jobs:
 
       - name: Statistic rewards
         if: env.NEW_COMMITS == 'true'
-        run: deno --allow-all ./scripts/count-reward.ts statistic.yml
-
-      - name: Save Statistic in Git tag & GitHub release
-        if: env.NEW_COMMITS == 'true'
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          tag_name="statistic-$(date +%Y-%m)"
-
-          git tag -a $tag_name $(git rev-parse HEAD) -m "$(cat statistic.yml)"
-          git push origin --tags
-
-          gh release create $tag_name --notes "$(cat statistic.yml)"
+        run: deno --allow-all ./scripts/count-reward.ts
