@@ -5,7 +5,14 @@ import { Reward } from "./type.ts";
 
 $.verbose = true;
 
-const [repositoryOwner, repositoryName, issueNumber, currency, reward] = argv._;
+const [
+  repositoryOwner,
+  repositoryName,
+  issueNumber,
+  issueAuthor,
+  currency,
+  reward,
+] = argv._;
 
 interface PRMeta {
   author: components["schemas"]["simple-user"];
@@ -25,6 +32,9 @@ const PR_URL = await $`gh api graphql -f query='{
   }
 }' --jq '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.merged == true) | .url' | head -n 1`;
 
+if (!PR_URL.text().trim())
+  throw new ReferenceError("No merged PR is found for the given issue number.");
+
 const { author, assignees }: PRMeta = await (
   await $`gh pr view ${PR_URL} --json author,assignees`
 ).json();
@@ -34,7 +44,9 @@ const users = [author.login, ...assignees.map(({ login }) => login)];
 const averageReward = (parseFloat(reward) / users.length).toFixed(2);
 
 const list: Reward[] = users.map((login) => ({
-  id: `@${login}`,
+  issue: `#${issueNumber}`,
+  payer: `@${issueAuthor}`,
+  payee: `@${login}`,
   currency,
   reward: parseFloat(averageReward),
 }));

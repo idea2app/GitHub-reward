@@ -19,20 +19,27 @@ const rewardTags = rawTags.stdout
 let rawYAML = "";
 
 for (const tag of rewardTags)
-  rawYAML += await $`git tag -l --format="%(contents)" ${tag}`;
+  rawYAML += (await $`git tag -l --format="%(contents)" ${tag}`) + "\n";
+
+if (!rawYAML.trim())
+  throw new ReferenceError("No reward data is found for the last month.");
 
 const rewards = YAML.parse(rawYAML) as Reward[];
 
-const groupedRewards = Object.groupBy(rewards, ({ id }) => id);
+const groupedRewards = Object.groupBy(rewards, ({ payee }) => payee);
 
-const summaryList = Object.entries(groupedRewards).map(([id, rewards]) => {
+const summaryList = Object.entries(groupedRewards).map(([payee, rewards]) => {
   const reward = rewards!.reduce((acc, { currency, reward }) => {
     acc[currency] ??= 0;
     acc[currency] += reward;
     return acc;
   }, {} as Record<string, number>);
 
-  return { id, reward };
+  return {
+    payee,
+    reward,
+    accounts: rewards!.map(({ payee: _, ...account }) => account),
+  };
 });
 
 const summaryText = YAML.stringify(summaryList);

@@ -1,5 +1,7 @@
 export interface Reward {
-  id: string;
+  issue: string;
+  payer: string;
+  payee: string;
   currency: string;
   reward: number;
 }
