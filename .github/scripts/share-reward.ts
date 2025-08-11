@@ -62,25 +62,10 @@ if (users.length === 0) {
   process.exit(0);
 }
 
-// Validate reward amount before processing
-if (!reward || reward.toString().trim() === '') {
-  console.error("Error: Reward amount is empty or missing. Cannot proceed with reward distribution.");
-  console.error(`Received reward value: ${reward}`);
-  process.exit(1);
-}
-
 const rewardNumber = parseFloat(reward);
-if (isNaN(rewardNumber)) {
-  console.error("Error: Reward amount is not a valid number. Cannot proceed with reward distribution.");
-  console.error(`Received reward value: ${reward}`);
-  process.exit(1);
-}
 
-if (rewardNumber <= 0) {
-  console.error("Error: Reward amount must be greater than 0. Cannot proceed with reward distribution.");
-  console.error(`Received reward value: ${reward} (parsed as ${rewardNumber})`);
-  process.exit(1);
-}
+if (isNaN(rewardNumber) || rewardNumber <= 0)
+  throw new RangeError(`Reward amount is not a valid number, can not proceed with reward distribution. Received reward value: ${reward}`);
 
 const averageReward = (rewardNumber / users.length).toFixed(2);
 
