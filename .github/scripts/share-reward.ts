@@ -62,7 +62,12 @@ if (users.length === 0) {
   process.exit(0);
 }
 
-const averageReward = (parseFloat(reward) / users.length).toFixed(2);
+const rewardNumber = parseFloat(reward);
+
+if (isNaN(rewardNumber) || rewardNumber <= 0)
+  throw new RangeError(`Reward amount is not a valid number, can not proceed with reward distribution. Received reward value: ${reward}`);
+
+const averageReward = (rewardNumber / users.length).toFixed(2);
 
 const list: Reward[] = users.map((login) => ({
   issue: `#${issueNumber}`,
