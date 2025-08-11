@@ -40,6 +40,8 @@ done
 4.  After the CI/CD & code review passed, set hardwork reviewers as PR assignees first for reward sharing, then the PR can be merged
 
 5.  GitHub actions will calculate every closed Reward Issue, and save the reward data of all related developers to a Git tag of the merged commit
+    
+    > **Note**: Bot users (including GitHub Copilot, Dependabot, etc.) are automatically excluded from reward distribution to ensure only real developers receive compensation.
 
 6.  Every first day of a month, GitHub actions will calculate the reward data of all developers in the last month, and save it to a Git tag & GitHub release of the merged commit
 
