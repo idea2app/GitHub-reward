@@ -9,7 +9,7 @@ const [
   repositoryOwner,
   repositoryName,
   issueNumber,
-  issueAuthor,
+  payer, // GitHub username of the payer (provided by workflow, defaults to issue creator)
   currency,
   reward,
 ] = argv._;
@@ -71,7 +71,7 @@ const averageReward = (rewardNumber / users.length).toFixed(2);
 
 const list: Reward[] = users.map((login) => ({
   issue: `#${issueNumber}`,
-  payer: `@${issueAuthor}`,
+  payer: `@${payer}`,
   payee: `@${login}`,
   currency,
   reward: parseFloat(averageReward),
