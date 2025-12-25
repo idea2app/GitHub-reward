@@ -7,7 +7,7 @@ body:
     - type: textarea
       id: description
       attributes:
-          label: Task Description
+          label: Task description
       validations:
           required: true
 

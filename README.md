@@ -17,16 +17,10 @@ NPM compatible environment for example:
 
 ```shell
 npm i pnpm -g
+
 cd /path/to/your/git/repository/root
 
-folders=".github/ISSUE_TEMPLATE .github/workflows .github/scripts"
-
-for folder in $folders; do
-    mkdir -p $folder
-    cd $folder
-    pnpx get-git-folder https://github.com/idea2app/GitHub-reward main $folder
-    cd -
-done
+pnpx git-utility download https://github.com/idea2app/GitHub-reward main .github/ .github/
 ```
 
 ## Usage
@@ -40,7 +34,7 @@ done
 4.  After the CI/CD & code review passed, set hardwork reviewers as PR assignees first for reward sharing, then the PR can be merged
 
 5.  GitHub actions will calculate every closed Reward Issue, and save the reward data of all related developers to a Git tag of the merged commit
-    
+
     > **Note**: Bot users (including GitHub Copilot, Dependabot, etc.) are automatically excluded from reward distribution to ensure only real developers receive compensation.
 
 6.  Every first day of a month, GitHub actions will calculate the reward data of all developers in the last month, and save it to a Git tag & GitHub release of the merged commit
