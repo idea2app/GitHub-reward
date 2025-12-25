@@ -35,7 +35,6 @@ jobs:
             ${{ github.repository_owner }} \
             ${{ github.event.repository.name }} \
             ${{ github.event.issue.number }} \
-            ${{ github.event.issue.user.login }} \
+            "${{ steps.parse_issue.outputs.issueparser_payer || github.event.issue.user.login }}" \
             "${{ steps.parse_issue.outputs.issueparser_currency }}" \
-            ${{ steps.parse_issue.outputs.issueparser_amount }} \
-            "${{ steps.parse_issue.outputs.issueparser_payer }}" \
+            ${{ steps.parse_issue.outputs.issueparser_amount }}

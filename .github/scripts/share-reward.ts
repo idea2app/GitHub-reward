@@ -9,10 +9,9 @@ const [
   repositoryOwner,
   repositoryName,
   issueNumber,
-  issueAuthor,
+  payer, // GitHub username of the payer (from form or defaulted to issue creator in workflow)
   currency,
   reward,
-  payer, // Optional: GitHub username of the payer (defaults to issueAuthor if not provided)
 ] = argv._;
 
 interface PRMeta {
@@ -70,16 +69,9 @@ if (isNaN(rewardNumber) || rewardNumber <= 0)
 
 const averageReward = (rewardNumber / users.length).toFixed(2);
 
-// Get the payer username, defaulting to issue creator if not provided
-function getPayerUsername(payer: string | undefined, fallback: string): string {
-  return payer && payer.trim() !== '' ? payer : fallback;
-}
-
-const payerUsername = getPayerUsername(payer, issueAuthor);
-
 const list: Reward[] = users.map((login) => ({
   issue: `#${issueNumber}`,
-  payer: `@${payerUsername}`,
+  payer: `@${payer}`,
   payee: `@${login}`,
   currency,
   reward: parseFloat(averageReward),
