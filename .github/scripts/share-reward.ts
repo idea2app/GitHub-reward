@@ -9,7 +9,7 @@ const [
   repositoryOwner,
   repositoryName,
   issueNumber,
-  payer, // GitHub username of the payer (from form or defaulted to issue creator in workflow)
+  payer, // GitHub username of the payer (provided by workflow, defaults to issue creator)
   currency,
   reward,
 ] = argv._;
