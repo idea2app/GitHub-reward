@@ -38,3 +38,4 @@ jobs:
             ${{ github.event.issue.user.login }} \
             "${{ steps.parse_issue.outputs.issueparser_currency }}" \
             ${{ steps.parse_issue.outputs.issueparser_amount }} \
+            "${{ steps.parse_issue.outputs.issueparser_payer }}" \

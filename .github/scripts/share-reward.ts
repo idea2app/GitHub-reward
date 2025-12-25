@@ -12,6 +12,7 @@ const [
   issueAuthor,
   currency,
   reward,
+  payer,
 ] = argv._;
 
 interface PRMeta {
@@ -69,9 +70,12 @@ if (isNaN(rewardNumber) || rewardNumber <= 0)
 
 const averageReward = (rewardNumber / users.length).toFixed(2);
 
+// Use provided payer or default to issue creator
+const payerUsername = payer && payer.trim() !== '' ? payer : issueAuthor;
+
 const list: Reward[] = users.map((login) => ({
   issue: `#${issueNumber}`,
-  payer: `@${issueAuthor}`,
+  payer: `@${payerUsername}`,
   payee: `@${login}`,
   currency,
   reward: parseFloat(averageReward),
