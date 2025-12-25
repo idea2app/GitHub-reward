@@ -41,6 +41,12 @@ pnpx git-utility download https://github.com/idea2app/GitHub-reward main .github
 
 7.  Pay the salary to developers via your convenience
 
+## Reference
+
+1. [Open Source Bounty (original thought)](https://idea2app.feishu.cn/wiki/I348wiT7DipbKbkPUPfcwQBAn7c)
+2. [Open Collaboration Token (OCToken)](https://open-source-bazaar.feishu.cn/wiki/AjzTwHfGaiuk9MknJiWcBaOcnfc)
+3. [Lark BI Table implementation](https://idea2app.feishu.cn/wiki/Bjitw6q6OiBqJjkOvZRcfjafnef)
+
 [1]: https://issuehunt.io/
 [2]: https://polar.sh/
 [3]: https://gitee.com/gitee_reward
