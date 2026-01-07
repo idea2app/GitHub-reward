@@ -40,7 +40,22 @@ const prData = PR_DATA.text().trim();
 if (!prData)
   throw new ReferenceError("No merged PR is found for the given issue number.");
 
-const { url: PR_URL, mergeCommitSha } = JSON.parse(prData);
+let PR_URL: string;
+let mergeCommitSha: string;
+
+try {
+  const parsed = JSON.parse(prData);
+  PR_URL = parsed.url;
+  mergeCommitSha = parsed.mergeCommitSha;
+  
+  if (!PR_URL || !mergeCommitSha) {
+    throw new Error("Missing required fields in PR data");
+  }
+} catch (error) {
+  throw new ReferenceError(
+    `Failed to parse PR data: ${error instanceof Error ? error.message : String(error)}`
+  );
+}
 
 console.log(`Merged PR URL: ${PR_URL}`);
 console.log(`Merge commit SHA: ${mergeCommitSha}`);
