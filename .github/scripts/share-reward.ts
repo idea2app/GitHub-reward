@@ -40,15 +40,10 @@ const prData = PR_DATA.text().trim();
 if (!prData)
   throw new ReferenceError("No merged PR is found for the given issue number.");
 
-let PR_URL: string;
-let mergeCommitSha: string;
+const { url: PR_URL, mergeCommitSha } = JSON.parse(prData);
 
-  const parsed = JSON.parse(prData);
-  PR_URL = parsed.url;
-  mergeCommitSha = parsed.mergeCommitSha;
-  
-  if (!PR_URL || !mergeCommitSha)
-    throw new Error("Missing required fields in PR data");
+if (!PR_URL || !mergeCommitSha)
+  throw new Error("Missing required fields in PR data");
 
 console.table({ PR_URL, mergeCommitSha });
 
@@ -56,33 +51,34 @@ const { author, assignees }: PRMeta = await (
   await $`gh pr view ${PR_URL} --json author,assignees`
 ).json();
 
-// Function to check if a user is a Copilot/bot user
-function isCopilotUser(login: string): boolean {
+function isBotUser(login: string) {
   const lowerLogin = login.toLowerCase();
-  return lowerLogin.includes('copilot') || 
-         lowerLogin.includes('[bot]') ||
-         lowerLogin === 'github-actions[bot]' ||
-         lowerLogin.endsWith('[bot]');
+  return (
+    lowerLogin.includes("copilot") ||
+    lowerLogin.includes("[bot]") ||
+    lowerLogin === "github-actions[bot]" ||
+    lowerLogin.endsWith("[bot]")
+  );
 }
 
-// Filter out Copilot and bot users from the list
+// Filter out Bot users from the list
 const allUsers = [author.login, ...assignees.map(({ login }) => login)];
-const users = allUsers.filter(login => !isCopilotUser(login));
+const users = allUsers.filter((login) => !isBotUser(login));
 
-console.log(`All users: ${allUsers.join(', ')}`);
-console.log(`Filtered users (excluding bots/copilot): ${users.join(', ')}`);
+console.log(`All users: ${allUsers.join(", ")}`);
+console.log(`Filtered users (excluding bots): ${users.join(", ")}`);
 
-// Handle case where all users are bots/copilot
-if (users.length === 0) {
-  console.log("No real users found (all users are bots/copilot). Skipping reward distribution.");
-  console.log(`Filtered users: ${allUsers.join(', ')}`);
-  process.exit(0);
-}
+if (!users[0])
+  throw new ReferenceError(
+    "No real users found (all users are bots). Skipping reward distribution."
+  );
 
 const rewardNumber = parseFloat(reward);
 
 if (isNaN(rewardNumber) || rewardNumber <= 0)
-  throw new RangeError(`Reward amount is not a valid number, can not proceed with reward distribution. Received reward value: ${reward}`);
+  throw new RangeError(
+    `Reward amount is not a valid number, can not proceed with reward distribution. Received reward value: ${reward}`
+  );
 
 const averageReward = (rewardNumber / users.length).toFixed(2);
 
