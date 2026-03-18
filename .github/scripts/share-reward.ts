@@ -93,10 +93,10 @@ const listText = YAML.stringify(list);
 
 console.log(listText);
 
-await $`git config --global user.name "github-actions[bot]"`;
-await $`git config --global user.email "github-actions[bot]@users.noreply.github.com"`;
+await $`git config user.name "github-actions[bot]"`;
+await $`git config user.email "github-actions[bot]@users.noreply.github.com"`;
 await $`git tag -a "reward-${issueNumber}" ${mergeCommitSha} -m ${listText}`;
-await $`git push origin --tags`;
+await $`git push origin --tags --no-verify`;
 
 const commentBody = `## Reward data
 
