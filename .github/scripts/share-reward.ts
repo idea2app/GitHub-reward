@@ -14,6 +14,7 @@ const [
   payer, // GitHub username of the payer (provided by workflow, defaults to issue creator)
   currency,
   reward,
+  source,
 ] = argv._;
 
 interface PRMeta {
@@ -102,6 +103,7 @@ const list: Reward[] = users.map((login) => ({
   payee: `@${login}`,
   currency,
   reward: parseFloat(averageReward),
+  source,
 }));
 const listText = YAML.stringify(list);
 
